@@ -1,0 +1,33 @@
+version: '3.7'
+services:
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    hostname: mysql
+    volumes:
+      - v_titipitci:/var/lib/mysql
+    restart:
+      always
+    environment:
+      MYSQL_ROOT_PASSWORD: ngapainsih
+      MYSQL_DATABASE: db_titipitci
+    networks:
+      - n_titipitci
+  app:
+    build : .
+    container_name: titipitci
+    ports:
+      - 5000:5000
+    depends_on:
+      - mysql
+    environment:
+      WAIT_HOSTS: mysql:3306
+    networks:
+      - n_titipitci        
+networks:
+  n_titipitci:
+volumes:
+  v_titipitci:
+
+
+
