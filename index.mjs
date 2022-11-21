@@ -36,7 +36,11 @@ async function connectToWhatsApp() {
         browser: Browsers.ubuntu('Chrome'),
         syncFullHistory: false,
     })
+
+    sock.sendPresenceUpdate('unavailable')
+    
     sock.ev.on('creds.update', saveCreds)
+    
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect } = update
         if (connection === 'close') {
