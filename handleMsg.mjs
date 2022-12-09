@@ -2,6 +2,8 @@ import { textMenu, textCustomerService, textPenggunaan, textAbout, textAdmin, te
 import { CekResi, InputResi, UpdateResi, DeleteResi } from './lib/resi_services.mjs';
 import { InputNotif, DeleteNotif, GetNotifByNumber } from './lib/notif_services.mjs';
 import { isAdmin, server } from './lib/helper.mjs';
+import chalk from 'chalk'
+import moment from 'moment'
 import NodeCache from 'node-cache';
 const myCache = new NodeCache({ stdTTL: 30 })
 
@@ -10,6 +12,10 @@ async function sleep(ms) {
         setTimeout(resolve, ms);
     });
 }
+
+const color = (text, color) => {
+    return !color ? chalk.green(text) : color.startsWith('#') ? chalk.hex(color)(text) : chalk.keyword(color)(text);
+};
 export default async function HandleMsg(sock, message) {
     const noWa = message.key.remoteJid;
     const notifyName = message.pushName
@@ -37,8 +43,10 @@ export default async function HandleMsg(sock, message) {
         let dataresult
 
         const haveSession = myCache.get(`session:${noWa}`)
+        await sock.sendPresenceUpdate('composing', noWa);
 
         if (!haveSession) {
+            console.log('[MSG]', color(moment().format('DD/MM/YY HH:mm:ss'), '#A1FFCE') + ` Command ${(splitPesan[0])} from`, color(notifyName, '#38ef7d'))
             switch (splitPesan[0].toLowerCase()) {
                 case "menu":
                     await sock.readMessages([message.key]);
@@ -117,6 +125,7 @@ export default async function HandleMsg(sock, message) {
 
             if (responseButton) {
                 await sock.readMessages([message.key]);
+                console.log('[MSG]', color(moment().format('DD/MM/YY HH:mm:ss'), '#A1FFCE') + ` Button Response ${(responseButton.selectedButtonId)} from`, color(notifyName, '#38ef7d'))
                 if (responseButton.selectedButtonId == "resi") {
                     await sock.sendMessage(noWa, {
                         text: "Masukan Resi Anda"
@@ -228,12 +237,14 @@ export default async function HandleMsg(sock, message) {
             if (responseList) {
                 await sock.readMessages([message.key]);
                 if (responseList.title) {
+                    console.log('[MSG]', color(moment().format('DD/MM/YY HH:mm:ss'), '#A1FFCE') + ` Delete Resi ${(responseList.title)} from`, color(notifyName, '#38ef7d'))
                     dataresult = await DeleteNotif(notifyName, responseList.title.toUpperCase())
                     return await sock.sendMessage(noWa, { text: dataresult })
                 }
             }
 
             if (!admin) return
+            console.log('[MSG]', color(moment().format('DD/MM/YY HH:mm:ss'), '#A1FFCE') + ` Admin Command ${(body)} from`, color(notifyName, '#38ef7d'))
             switch (command) {
                 case 'ping':
                     await sock.sendMessage(noWa, { text: 'Pong' }, { quoted: message })
@@ -316,16 +327,19 @@ export default async function HandleMsg(sock, message) {
                         fileName: `Laporan, ${args[0]} sampai ${args[1]}.xlsx`
                     })
                 default:
+                    // await sock.sendMessage(noWa, { text: 'Perintah salah mohon menggunakan dengan benar ya' }, { quoted: message })
                     break;
             }
 
         } else {
             if (splitPesan[0] == '/coba' || splitPesan[0] == 'menu' || splitPesan[0] == 'Menu') {
+                console.log('[MSG]', color(moment().format('DD/MM/YY HH:mm:ss'), '#A1FFCE') + `Error Command ${(splitPesan[0])} from`, color(notifyName, '#38ef7d'))
                 await sock.readMessages([message.key]);
                 myCache.del(`session:${noWa}`)
                 return await sock.sendMessage(noWa, { text: `Hay ${notifyName}, \n\nGunakan perintah yang benar ya sesuai ketentuan` })
             }
             if (haveSession.menu == 'resi') {
+                console.log('[MSG]', color(moment().format('DD/MM/YY HH:mm:ss'), '#A1FFCE') + ` Cek Resi ${(haveSession.menu)} from`, color(notifyName, '#38ef7d'))
                 await sock.readMessages([message.key]);
                 if (splitPesan.length != 1) {
                     return await sock.sendMessage(noWa, { text: `Hay ${notifyName}, \n\nGunakan perintah yang benar ya sesuai ketentuan` })
@@ -334,6 +348,8 @@ export default async function HandleMsg(sock, message) {
                 return await CekResi(notifyName, splitPesan[0].toUpperCase()).then((result) => sock.sendMessage(noWa, { text: result }))
             }
             if (haveSession.menu == 'notif') {
+                console.log('[MSG]', color(moment().format('DD/MM/YY HH:mm:ss'), '#A1FFCE') + ` Nyalakan Notif ${(haveSession.menu)} from`, color(notifyName, '#38ef7d'))
+
                 await sock.readMessages([message.key]);
                 if (splitPesan.length != 1) {
                     return await sock.sendMessage(noWa, { text: `Hay ${notifyName}, \n\nGunakan perintah yang benar ya sesuai ketentuan` })
